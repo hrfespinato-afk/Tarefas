@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Rotinas da Casa</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+  }
+  .container {
+    max-width: 650px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-top: 0;
+  }
+  
+  /* Estilos do Formulário */
+  .add-task-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px dashed #ecf0f1;
+  }
+  .add-task-form input[type="text"] {
+    flex: 3;
+    min-width: 200px;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+  }
+  .add-task-form input[type="number"] {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+  }
+  .add-task-form select {
+    flex: 2;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+  }
+  .add-task-form button {
+    flex: 1;
+    min-width: 100px;
+    background: #3498db;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .add-task-form button:hover { background: #2980b9; }
+  .add-task-form .cancel-btn { background: #95a5a6; display: none; }
+  .add-task-form .cancel-btn:hover { background: #7f8c8d; }
+
+  /* Lista de Tarefas */
+  .task {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 12px;
+    border-left: 5px solid #bdc3c7;
+    border-radius: 6px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+  .task-info { flex: 1; }
+  .task-info h3 { margin: 0 0 5px 0; font-size: 1.1em; display: flex; align-items: center; gap: 10px;}
+  .task-info p { margin: 0; font-size: 0.9em; color: #7f8c8d; }
+  
+  /* Badges de Prioridade */
+  .badge {
+    font-size: 0.7em;
+    padding: 3px 6px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .badge-1 { background-color: #95a5a6; } /* Básico */
+  .badge-2 { background-color: #f39c12; } /* Urgente */
+  .badge-3 { background-color: #8e44ad; } /* Ext. Urgente */
+
+  /* Alertas Visuais da Tarefa */
+  .task.urgent { border-left-color: #e74c3c; background: #fadbd8; }
+  .task.urgent h3, .task.urgent p strong { color: #c0392b; }
+  .task.warning { border-left-color: #f39c12; background: #fcf3cf; }
+  .task.warning h3, .task.warning p strong { color: #d35400; }
+  .task.normal { border-left-color: #2ecc71; }
+  
+  /* Botões de Ação */
+  .actions { display: flex; gap: 5px; }
+  .btn-done { background: #2ecc71; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;}
+  .btn-done:hover { background: #27ae60; }
+  .btn-edit { background: #f1c40f; color: #333; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;}
+  .btn-edit:hover { background: #f39c12; }
+  .btn-del { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;}
+  .btn-del:hover { background: #c0392b; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Gestão Silenciosa da Casa</h2>
+  
+  <form class="add-task-form" id="taskForm" onsubmit="salvarTarefaForm(event)">
+    <input type="hidden" id="editId">
+    <input type="text" id="novaTarefaNome" placeholder="Ex: Lavar banheiro" required>
+    <input type="number" id="novaTarefaCiclo" placeholder="Dias" min="1" title="Prazo em dias" required>
+    <select id="novaTarefaPrioridade">
+      <option value="1">Prioridade: Básico</option>
+      <option value="2">Prioridade: Urgente</option>
+      <option value="3">Prioridade: Extr. Urgente</option>
+    </select>
+    <button type="submit" id="btnSubmit">+ Adicionar</button>
+    <button type="button" class="cancel-btn" id="btnCancel" onclick="cancelarEdicao()">Cancelar</button>
+  </form>
+
+  <div id="taskList"></div>
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('gerenciadorRotinaV2')) || [];
+  
+  // Migração caso você tenha dados da versão anterior sem prioridade
+  tasks.forEach(t => {
+      if(!t.priority) t.priority = 1; 
+  });
+
+  function salvarERenderizar() {
+    localStorage.setItem('gerenciadorRotinaV2', JSON.stringify(tasks));
+    renderizarTarefas();
+  }
+
+  function salvarTarefaForm(event) {
+    event.preventDefault();
+    
+    const idEditando = document.getElementById('editId').value;
+    const nome = document.getElementById('novaTarefaNome').value.trim();
+    const ciclo = parseInt(document.getElementById('novaTarefaCiclo').value);
+    const prioridade = parseInt(document.getElementById('novaTarefaPrioridade').value);
+
+    if (nome && ciclo > 0) {
+      if (idEditando) {
+        // Atualizando tarefa existente
+        const index = tasks.findIndex(t => t.id == idEditando);
+        if(index !== -1) {
+          tasks[index].name = nome;
+          tasks[index].cycle = ciclo;
+          tasks[index].priority = prioridade;
+        }
+      } else {
+        // Criando nova tarefa
+        const novaTarefa = {
+          id: Date.now(),
+          name: nome,
+          cycle: ciclo,
+          priority: prioridade,
+          lastDone: Date.now() // Vai direto pro fundo da lista
+        };
+        tasks.push(novaTarefa);
+      }
+      
+      cancelarEdicao();
+      salvarERenderizar();
+    }
+  }
+
+  function marcarComoFeito(id) {
+    const task = tasks.find(t => t.id === id);
+    if(task) {
+      task.lastDone = Date.now(); // Grava o milissegundo exato
+      salvarERenderizar();
+    }
+  }
+
+  function editarTarefa(id) {
+    const task = tasks.find(t => t.id === id);
+    if(task) {
+      document.getElementById('editId').value = task.id;
+      document.getElementById('novaTarefaNome').value = task.name;
+      document.getElementById('novaTarefaCiclo').value = task.cycle;
+      document.getElementById('novaTarefaPrioridade').value = task.priority || 1;
+      
+      document.getElementById('btnSubmit').innerText = "Atualizar";
+      document.getElementById('btnCancel').style.display = "block";
+      document.getElementById('novaTarefaNome').focus();
+    }
+  }
+
+  function excluirTarefa(id) {
+    if(confirm("Tem certeza que quer excluir essa tarefa?")) {
+      tasks = tasks.filter(t => t.id !== id);
+      salvarERenderizar();
+    }
+  }
+
+  function cancelarEdicao() {
+    document.getElementById('taskForm').reset();
+    document.getElementById('editId').value = "";
+    document.getElementById('btnSubmit').innerText = "+ Adicionar";
+    document.getElementById('btnCancel').style.display = "none";
+  }
+
+  function getBadgeHtml(priority) {
+    if (priority === 3) return `<span class="badge badge-3">Extr. Urgente</span>`;
+    if (priority === 2) return `<span class="badge badge-2">Urgente</span>`;
+    return `<span class="badge badge-1">Básico</span>`;
+  }
+
+  function renderizarTarefas() {
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+
+    if (tasks.length === 0) {
+      list.innerHTML = '<p style="text-align:center; color:#7f8c8d;">Sua lista está limpa. Adicione uma tarefa.</p>';
+      return;
+    }
+
+    const agora = Date.now();
+    const msPorDia = 86400000;
+
+    // Calcula os dias restantes
+    tasks.forEach(task => {
+      const diasPassados = Math.floor((agora - task.lastDone) / msPorDia);
+      task.diasRestantes = task.cycle - diasPassados;
+      
+      if (task.diasRestantes < 0) task.status = 'urgent';
+      else if (task.diasRestantes === 0) task.status = 'warning';
+      else task.status = 'normal';
+    });
+
+    // LÓGICA DE ORDENAÇÃO (A Mágica do Desempate)
+    tasks.sort((a, b) => {
+      // 1. Quem tem menos dias restantes sobe
+      if (a.diasRestantes !== b.diasRestantes) {
+        return a.diasRestantes - b.diasRestantes;
+      }
+      // 2. Se cair no mesmo dia, quem tem PRIORIDADE MAIOR sobe (3 > 2 > 1)
+      const prioA = a.priority || 1;
+      const prioB = b.priority || 1;
+      if (prioB !== prioA) {
+        return prioB - prioA;
+      }
+      // 3. Se empatar na prioridade e nos dias, quem foi feito há mais tempo sobe.
+      // E quem você acabou de adiantar (Date.now() mais recente) desce pro absoluto final.
+      return a.lastDone - b.lastDone;
+    });
+
+    tasks.forEach(task => {
+      const div = document.createElement('div');
+      div.className = `task ${task.status}`;
+      
+      let textoStatus = `${task.diasRestantes} dias restantes`;
+      if (task.diasRestantes < 0) textoStatus = `ATRASADO (${Math.abs(task.diasRestantes)} dias)`;
+      else if (task.diasRestantes === 0) textoStatus = 'Fazer Hoje!';
+
+      div.innerHTML = `
+        <div class="task-info">
+          <h3>${task.name} ${getBadgeHtml(task.priority)}</h3>
+          <p>A cada ${task.cycle} dias | <strong>${textoStatus}</strong></p>
+        </div>
+        <div class="actions">
+          <button class="btn-done" onclick="marcarComoFeito(${task.id})" title="Marcar como feito">✓</button>
+          <button class="btn-edit" onclick="editarTarefa(${task.id})" title="Editar">✎</button>
+          <button class="btn-del" onclick="excluirTarefa(${task.id})" title="Excluir">✗</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  // Renderiza ao carregar
+  renderizarTarefas();
+</script>
+
+</body>
+</html>

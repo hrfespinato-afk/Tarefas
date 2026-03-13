@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 <title>Painel de Rotinas da Casa</title>
 <style>
-  /* Reset básico para evitar quebras no mobile */
   * { box-sizing: border-box; }
 
   body {
@@ -13,7 +12,7 @@
     background-color: #f4f7f6;
     color: #333;
     margin: 0;
-    padding: 15px; /* Reduzido para ganhar espaço no celular */
+    padding: 15px;
   }
   .container {
     max-width: 650px;
@@ -30,7 +29,6 @@
     font-size: 1.5em;
   }
   
-  /* Estilos do Formulário */
   .add-task-form {
     display: flex;
     flex-wrap: wrap;
@@ -40,11 +38,10 @@
     border-bottom: 2px dashed #ecf0f1;
   }
   
-  /* REGRA ANTI-ZOOM: font-size: 16px obrigatório */
   .add-task-form input[type="text"],
   .add-task-form input[type="number"],
   .add-task-form select {
-    padding: 12px; /* Maior área de toque */
+    padding: 12px;
     border: 1px solid #bdc3c7;
     border-radius: 5px;
     font-size: 16px; 
@@ -71,7 +68,6 @@
   .add-task-form .cancel-btn { background: #95a5a6; display: none; }
   .add-task-form .cancel-btn:hover { background: #7f8c8d; }
 
-  /* Lista de Tarefas */
   .task {
     display: flex;
     justify-content: space-between;
@@ -87,7 +83,6 @@
   .task-info h3 { margin: 0 0 5px 0; font-size: 1.1em; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;}
   .task-info p { margin: 0; font-size: 0.9em; color: #7f8c8d; }
   
-  /* Badges de Prioridade */
   .badge {
     font-size: 0.7em;
     padding: 4px 6px;
@@ -100,43 +95,26 @@
   .badge-2 { background-color: #f39c12; }
   .badge-3 { background-color: #8e44ad; }
 
-  /* Alertas Visuais da Tarefa */
   .task.urgent { border-left-color: #e74c3c; background: #fadbd8; }
   .task.urgent h3, .task.urgent p strong { color: #c0392b; }
   .task.warning { border-left-color: #f39c12; background: #fcf3cf; }
   .task.warning h3, .task.warning p strong { color: #d35400; }
   .task.normal { border-left-color: #2ecc71; }
   
-  /* Botões de Ação */
   .actions { display: flex; gap: 6px; }
   .btn-done { background: #2ecc71; color: white; border: none; padding: 10px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px;}
   .btn-edit { background: #f1c40f; color: #333; border: none; padding: 10px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px;}
   .btn-del { background: #e74c3c; color: white; border: none; padding: 10px 14px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px;}
 
-  /* OTIMIZAÇÃO PARA TELAS PEQUENAS (SMARTPHONES) */
   @media (max-width: 600px) {
-    .add-task-form {
-      flex-direction: column; /* Empilha os campos */
-    }
+    .add-task-form { flex-direction: column; }
     .add-task-form input[type="text"],
     .add-task-form input[type="number"],
     .add-task-form select,
-    .add-task-form button {
-      flex: none; /* Remove a proporção do flex */
-      width: 100%; /* Ocupa a largura total */
-    }
-    .task {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
-    }
-    .actions {
-      width: 100%;
-      justify-content: flex-end; /* Alinha os botões à direita no celular */
-      border-top: 1px solid #eee;
-      padding-top: 10px;
-    }
-    .btn-done { flex: 1; } /* Faz o botão de "Feito" ficar maior no mobile */
+    .add-task-form button { flex: none; width: 100%; }
+    .task { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .actions { width: 100%; justify-content: flex-end; border-top: 1px solid #eee; padding-top: 10px; }
+    .btn-done { flex: 1; }
   }
 </style>
 </head>
@@ -148,15 +126,12 @@
   <form class="add-task-form" id="taskForm" onsubmit="salvarTarefaForm(event)">
     <input type="hidden" id="editId">
     <input type="text" id="novaTarefaNome" placeholder="Ex: Lavar roupas" required>
-    
     <input type="number" id="novaTarefaCiclo" placeholder="Dias" min="1" title="Prazo em dias" required>
-    
     <select id="novaTarefaPrioridade">
       <option value="1">Básico (Peso 1)</option>
       <option value="2">Urgente (Peso 2)</option>
       <option value="3">Extr. Urgente (Peso 3)</option>
     </select>
-    
     <button type="submit" id="btnSubmit">+ Adicionar</button>
     <button type="button" class="cancel-btn" id="btnCancel" onclick="cancelarEdicao()">Cancelar</button>
   </form>
@@ -182,7 +157,6 @@
     const ciclo = parseInt(document.getElementById('novaTarefaCiclo').value);
     const prioridade = parseInt(document.getElementById('novaTarefaPrioridade').value);
 
-    // Esconde o teclado no celular após adicionar
     document.getElementById('novaTarefaNome').blur();
     document.getElementById('novaTarefaCiclo').blur();
 
@@ -229,7 +203,6 @@
       document.getElementById('btnSubmit').innerText = "Atualizar";
       document.getElementById('btnCancel').style.display = "block";
       
-      // Rola a tela para o topo suavemente no celular para ver o formulário
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
@@ -254,6 +227,13 @@
     return `<span class="badge badge-1">Básico</span>`;
   }
 
+  // Função nova: Zera as horas para comparar apenas os dias do calendário
+  function resetarParaMeiaNoite(timestamp) {
+    const data = new Date(timestamp);
+    data.setHours(0, 0, 0, 0);
+    return data.getTime();
+  }
+
   function renderizarTarefas() {
     const list = document.getElementById('taskList');
     list.innerHTML = '';
@@ -263,11 +243,14 @@
       return;
     }
 
-    const agora = Date.now();
     const msPorDia = 86400000;
+    const hojeMeiaNoite = resetarParaMeiaNoite(Date.now()); // Hoje às 00:00:00
 
     tasks.forEach(task => {
-      const diasPassados = Math.floor((agora - task.lastDone) / msPorDia);
+      const lastDoneMeiaNoite = resetarParaMeiaNoite(task.lastDone); // Última vez feita às 00:00:00
+      
+      // Math.round corrige possíveis diferenças de horário de verão
+      const diasPassados = Math.round((hojeMeiaNoite - lastDoneMeiaNoite) / msPorDia);
       task.diasRestantes = task.cycle - diasPassados;
       
       if (task.diasRestantes < 0) task.status = 'urgent';
@@ -306,7 +289,12 @@
     });
   }
 
+  // Renderiza ao carregar a página
   renderizarTarefas();
+
+  // Atualiza a tela automaticamente a cada 1 minuto caso você deixe o navegador aberto
+  setInterval(renderizarTarefas, 60000); 
+
 </script>
 
 </body>
